@@ -297,6 +297,9 @@ processors:
       - key: service.name
         value: tailscale-router
         action: upsert
+      - key: tailscale.router
+        value: ${hostname}
+        action: upsert
   batch: {}
 
 exporters:

@@ -313,4 +313,9 @@ run "test_otel_collector_enabled" {
     )
     error_message = "Expected userdata to install the collector, export to the endpoint and scrape tailscaled"
   }
+
+  assert {
+    condition     = strcontains(local.userdata, "- key: tailscale.router\n        value: test-tailscale\n        action: upsert")
+    error_message = "Expected the collector to name the router by its tailnet hostname in tailscale.router"
+  }
 }
