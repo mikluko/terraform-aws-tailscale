@@ -105,6 +105,10 @@ locals {
     routes_enabled             = local.routes_enabled
     route_table_ids            = join(",", local.resolved_route_table_ids)
     route_destination_cidrs    = join(",", var.route_destination_cidrs)
+
+    otel_collector_enabled  = var.otel_collector_endpoint != null
+    otel_collector_endpoint = var.otel_collector_endpoint == null ? "" : var.otel_collector_endpoint
+    otel_collector_version  = var.otel_collector_version
   })
 }
 

@@ -254,5 +254,68 @@ systemctl enable --now tailscale-routes.service \
   || echo "WARNING: failed to enable tailscale-routes.service."
 %{ endif }
 
+# --------------------- OpenTelemetry Collector ---------------
+%{ if otel_collector_enabled == true }
+echo "Installing otelcol-contrib ${otel_collector_version}..."
+case "$(uname -m)" in
+  aarch64) OTELCOL_ARCH=arm64 ;;
+  *)       OTELCOL_ARCH=amd64 ;;
+esac
+if pkg install "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${otel_collector_version}/otelcol-contrib_${otel_collector_version}_linux_$${OTELCOL_ARCH}.rpm"; then
+  cat >/etc/otelcol-contrib/config.yaml <<'EOF'
+receivers:
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu: {}
+      load: {}
+      memory: {}
+      disk: {}
+      filesystem: {}
+      paging: {}
+      processes: {}
+      network:
+        metrics:
+          system.network.conntrack.count:
+            enabled: true
+          system.network.conntrack.max:
+            enabled: true
+  prometheus/tailscale:
+    config:
+      scrape_configs:
+        - job_name: tailscale
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["100.100.100.100:80"]
+
+processors:
+  resourcedetection:
+    detectors: [ec2, system]
+    timeout: 5s
+  resource:
+    attributes:
+      - key: service.name
+        value: tailscale-router
+        action: upsert
+  batch: {}
+
+exporters:
+  otlphttp:
+    endpoint: ${otel_collector_endpoint}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics, prometheus/tailscale]
+      processors: [resourcedetection, resource, batch]
+      exporters: [otlphttp]
+EOF
+  systemctl enable otelcol-contrib
+  systemctl restart otelcol-contrib
+else
+  echo "WARNING: failed to install otelcol-contrib."
+fi
+%{ endif }
+
 echo "Tailscale setup completed."
 echo "User-data script finished successfully."

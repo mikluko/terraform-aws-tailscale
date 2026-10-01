@@ -288,3 +288,29 @@ run "test_routes_resolved_from_subnet_ids" {
     error_message = "Expected route management to be granted on the subnet-resolved route table"
   }
 }
+
+run "test_otel_collector_disabled_by_default" {
+  command = apply
+
+  assert {
+    condition     = !strcontains(local.userdata, "otelcol-contrib")
+    error_message = "Expected userdata to not install the OpenTelemetry Collector by default"
+  }
+}
+
+run "test_otel_collector_enabled" {
+  command = apply
+
+  variables {
+    otel_collector_endpoint = "https://telemetry.example.com"
+  }
+
+  assert {
+    condition = (
+      strcontains(local.userdata, "otelcol-contrib_0.161.0_linux_") &&
+      strcontains(local.userdata, "endpoint: https://telemetry.example.com") &&
+      strcontains(local.userdata, "100.100.100.100:80")
+    )
+    error_message = "Expected userdata to install the collector, export to the endpoint and scrape tailscaled"
+  }
+}

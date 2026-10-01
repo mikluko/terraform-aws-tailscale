@@ -167,6 +167,21 @@ variable "journald_max_retention_sec" {
   type        = string
   default     = "7d"
 }
+
+variable "otel_collector_endpoint" {
+  description = <<-EOT
+  OTLP/HTTP endpoint that an OpenTelemetry Collector on the instance exports host and tailscaled metrics to.
+  The collector is installed only when this is set.
+  EOT
+  type        = string
+  default     = null
+}
+
+variable "otel_collector_version" {
+  description = "Version of otelcol-contrib installed from the upstream release packages."
+  type        = string
+  default     = "0.161.0"
+}
 ################
 ## Tailscale ##
 ##############
